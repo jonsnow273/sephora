@@ -1,0 +1,37 @@
+# Sephora - Automation Whitelist
+# Only these actions can be executed by the automation agent.
+
+actions:
+  file_management:
+    - create_file
+    - create_folder
+    - delete_file          # DESTRUCTIVE - requires confirmation
+    - delete_folder        # DESTRUCTIVE - requires confirmation
+    - rename_file
+    - rename_folder
+    - copy_file
+    - move_file
+
+  application_control:
+    - open_application
+    - open_url_in_browser
+
+  file_search:
+    - search_files_by_name
+    - search_files_by_extension
+    - search_files_by_content
+
+  media:
+    - play_audio_file
+    - open_media_player
+
+  code:
+    - write_code_to_file
+    - open_in_vscode
+
+# Actions that ALWAYS require explicit user confirmation
+destructive_actions:
+  - delete_file
+  - delete_folder
+  - rename_file
+  - rename_folder

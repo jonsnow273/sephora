@@ -1,0 +1,27 @@
+# Sephora - Active Language Configuration
+# Uses Whisper ISO 639-1 language codes
+
+active_languages:
+  - code: "en"
+    name: "English"
+    enabled: true
+
+  - code: "hi"
+    name: "Hindi"
+    enabled: false
+
+  - code: "es"
+    name: "Spanish"
+    enabled: false
+
+  - code: "fr"
+    name: "French"
+    enabled: false
+
+  - code: "de"
+    name: "German"
+    enabled: false
+
+  - code: "ar"
+    name: "Arabic"
+    enabled: false

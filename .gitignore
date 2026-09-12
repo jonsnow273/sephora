@@ -1,0 +1,99 @@
+﻿# ============================================================
+# Sephora .gitignore
+# ============================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+.Python
+build/
+dist/
+*.egg-info/
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
+# Model Weights (large binary files - never commit these)
+models/
+*.bin
+*.safetensors
+*.gguf
+*.ggml
+*.pt
+*.pth
+!models/.gitkeep
+
+# Whisper cache
+.cache/
+whisper_cache/
+
+# Environment & Secrets
+.env
+*.env
+secrets.yaml
+secrets.json
+api_keys.txt
+
+# Local data (user-specific, not for version control)
+data/conversation_history/*
+data/steering_presets/*
+data/logs/*
+!data/conversation_history/.gitkeep
+!data/steering_presets/.gitkeep
+!data/logs/.gitkeep
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+nosetests.xml
+junit.xml
+
+# Type checking
+.mypy_cache/
+.pytype/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Audio files (temporary recordings)
+*.wav
+*.mp3
+*.ogg
+*.flac
+temp_audio/
+
+# Wake word ONNX models (downloaded, not committed)
+wake_word_models/*.onnx
+wake_word_data/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+ehthumbs.db
+*.lnk

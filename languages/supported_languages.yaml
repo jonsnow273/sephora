@@ -1,0 +1,17 @@
+# All languages natively supported by OpenAI Whisper (for reference)
+# To enable a language, add it to configs/languages.yaml
+
+whisper_supported:
+  - {code: "en", name: "English"}
+  - {code: "hi", name: "Hindi"}
+  - {code: "es", name: "Spanish"}
+  - {code: "fr", name: "French"}
+  - {code: "de", name: "German"}
+  - {code: "ar", name: "Arabic"}
+  - {code: "zh", name: "Chinese"}
+  - {code: "ja", name: "Japanese"}
+  - {code: "ko", name: "Korean"}
+  - {code: "pt", name: "Portuguese"}
+  - {code: "ru", name: "Russian"}
+  - {code: "it", name: "Italian"}
+  # ... and 87+ more

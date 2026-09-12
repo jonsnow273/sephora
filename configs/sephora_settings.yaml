@@ -1,0 +1,39 @@
+# Sephora - Global Settings
+
+assistant:
+  name: "Sephora"
+  wake_phrase: "hey sephora"
+  default_language: "en"
+
+voice:
+  enabled: true
+  microphone_index: null         # null = system default mic
+  wake_word_sensitivity: 0.5    # 0.0 (very sensitive) to 1.0 (less sensitive)
+  silence_timeout_seconds: 3
+
+automation:
+  confirmation_required: true   # Always confirm destructive actions
+  safe_delete: true             # Use recycle bin instead of permanent delete
+  sandbox_mode: false           # true = only simulate actions (dry-run)
+
+chatbot:
+  max_history_turns: 20
+  save_history: true
+
+llm:
+  model_name: "mistralai/Mistral-7B-Instruct-v0.3"
+  device: "cuda"
+  quantization: "4bit"          # Options: none, 4bit, 8bit
+  max_new_tokens: 512
+  temperature: 0.7
+  top_p: 0.9
+
+steering:
+  enabled: true
+  default_preset: "neutral"     # cautious, concise, detailed, creative, neutral
+  dashboard_auto_launch: false
+
+tray:
+  enabled: true
+  minimize_to_tray: true
+  show_notifications: true

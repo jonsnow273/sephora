@@ -1,81 +1,93 @@
 # 🏛️ Sephora System Architecture
 
-This document describes the high-level architecture, component interactions, and data flow of Sephora.
+> **Architectural Philosophy**: Sephora positions **internal activation steering at the cognitive center** of the local assistant. The OS automation, multilingual voice capture, and React interface are structured around a controllable, steerable inference core.
 
 ---
 
-## 📐 High-Level Overview
-
-Sephora is organized into decoupled layers connected via clean interfaces:
+## 📐 End-to-End System Topology
 
 ```
-+-------------------------------------------------------------------------+
-|                        Frontend UI (React + Tailwind)                   |
-|   - Chat Window          - Steering Dashboard     - Automation Logs     |
-+-------------------------------------------------------------------------+
-                                     |
-                       HTTP REST / WebSockets
-                                     |
-+-------------------------------------------------------------------------+
-|                        FastAPI Backend Server                           |
-|   - REST API Routes      - Streaming WebSocket    - State Management    |
-+-------------------------------------------------------------------------+
-           |                                       |
-+----------------------+              +-----------------------------------+
-|     Voice Subsystem  |              |       Cognitive Engine            |
-| - openWakeWord       |              | - LLM Loader (Mistral / Gemma)    |
-| - Whisper STT        |              | - TransformerLens Steering Hooks  |
-| - Language Detector  |              | - Conversation History Manager    |
-+----------------------+              +-----------------------------------+
-           |                                       |
-           +-------------------+-------------------+
-                               |
-                   [ Intent Classification ]
-                              / \
-               +-------------+   +-------------------------------+
-               |                 |                               |
-        [ Pure Chat ]     [ Automation Command ]                 |
-               |                 |                               |
-      (Steered LLM Output) [ Whitelist & Validation ]            |
-                                 |                               |
-                           [ Confirmation Gate ]                 |
-                                 |                               |
-                           [ OS Handlers (Files/Apps/Code) ] ----+
++-------------------------------------------------------------------------------+
+|                           User Touchpoints                                    |
+|   [ Multilingual Voice / Mic ]      [ Modern React UI ]      [ Terminal CLI ]  |
++-------------------------------------------------------------------------------+
+                 │                                │                      │
+                 ▼                                ▼                      ▼
+    [ openWakeWord & Whisper ]            [ HTTP / WebSockets ]    [ Rich Console ]
+                 │                                │                      │
+                 +────────────────────────────────┼──────────────────────+
+                                                  │
+                                                  ▼
++-------------------------------------------------------------------------------+
+|                         FastAPI Application Layer                             |
+|   - Streaming Token WebSocket (/ws/chat)                                      |
+|   - Audio Ingestion WebSocket (/ws/voice)                                     |
+|   - Steering Calibration & Comparison API (/api/steering/*)                   |
+|   - Whitelisted Automation Dispatcher (/api/automation/*)                     |
++-------------------------------------------------------------------------------+
+                                                  │
+                                                  ▼
++-------------------------------------------------------------------------------+
+|                       SEPHORA COGNITIVE ENGINE (Core)                         |
+|                                                                               |
+|   +───────────────────────────────────────────────────────────────────────+   |
+|   |         Activation Steering Subsystem (TransformerLens)               |   |
+|   |   - Calibrated Steering Vectors (cautious, concise, detailed, etc.)   |   |
+|   |   - Dynamic Forward Hooks: h'(L) = h(L) + α * v_direction            |   |
+|   |   - Real-Time Activation Extraction & Visual Telemetry                |   |
+|   |   - Side-by-Side Steered vs. Unsteered Comparison Engine              |   |
+|   +───────────────────────────────────────────────────────────────────────+   |
+|                                         ▲                                     |
+|                                         │ Intervenes during Forward Pass      |
+|                                         ▼                                     |
+|   +───────────────────────────────────────────────────────────────────────+   |
+|   |          Local LLM Engine (Mistral 7B / Gemma 2B via FP16/4-Bit)       |   |
+|   |   - Autoregressive Generation Pipeline                               |   |
+|   |   - Multi-Turn Conversation Context & State Store                     |   |
+|   +───────────────────────────────────────────────────────────────────────+   |
++-------------------------------------------------------------------------------+
+                                                  │
+                                                  ▼
+                                      [ Intent Classification ]
+                                     /                         \
+                       +────────────+                           +────────────+
+                       │                                                     │
+               [ Casual Chat ]                                      [ System Action ]
+                       │                                                     │
+             (Steered Output to UI)                                 [ Whitelist Guard ]
+                                                                             │
+                                                                   [ Confirmation Gate ]
+                                                                             │
+                                                                   [ Sandboxed OS Handlers ]
+                                                                   (Files / Apps / Search / Code)
 ```
 
 ---
 
-## 🧩 Core Subsystems
+## 🧩 Architectural Layers & Responsibilities
 
-### 1. Frontend (`frontend/`)
-- Built with **React 18**, **Vite**, **TypeScript**, and **Tailwind CSS**.
-- Real-time communication via WebSockets for streaming LLM tokens and live audio input feedback.
-- Interactive visualization components for activation steering using **Recharts**.
-- State managed through **Zustand** stores (`chatStore`, `steeringStore`, `settingsStore`).
+### 1. The Steering & Cognitive Core (`llm/`, `steering/`)
+Unlike traditional wrappers that only see inputs and outputs, Sephora taps directly into the model's forward execution pass:
+- **`steering/hook_manager.py`**: Manages registration and clean detachment of PyTorch forward hooks using TransformerLens.
+- **`steering/direction_finder.py`**: Calculates contrastive activation directions and PCA decomposition from calibrated reference sets.
+- **`steering/steering_engine.py`**: Dynamically injects perturbations during generation based on user slider coefficients $\alpha$.
+- **`llm/loader.py`**: Loads quantized local weights (Mistral 7B or Gemma 2B) while preserving internal tensor hook access.
 
-### 2. API Gateway (`api/`)
-- Powered by **FastAPI** and **Uvicorn**.
-- Provides REST endpoints for CRUD actions and WebSocket endpoints (`/ws/chat`, `/ws/voice`) for bi-directional streaming.
-- Implements CORS middleware for development mode and serves production React static assets.
+### 2. The Application Gateway (`api/`)
+- Asynchronous FastAPI server facilitating low-latency token streaming over WebSockets.
+- Exposes dedicated endpoints for the **Steering Lab**:
+  - `POST /api/steering/compare`: Runs identical prompts through unsteered and steered forward passes for immediate side-by-side evaluation.
+  - `GET /api/steering/activations`: Streams real-time layer activation magnitudes to the frontend charts.
 
-### 3. Local LLM Engine (`llm/`)
-- Supports **Mistral 7B Instruct** and **Gemma-2-2B-IT**.
-- Loaded via HuggingFace `transformers` and `accelerate`.
-- Supports 4-bit/8-bit quantization (`bitsandbytes`) for consumer GPU hardware (4-8 GB VRAM).
+### 3. Safe PC Automation Agent (`automation/`)
+- **Intent Classifier**: Parses natural language requests into structured actions.
+- **Whitelist Boundary**: Enforces strict conformance with `configs/automation_whitelist.yaml`.
+- **Confirmation Subsystem**: Halts destructive commands (deletion, overwriting) pending explicit human approval via the React modal or CLI confirmation.
 
-### 4. Activation Steering Engine (`steering/`)
-- Hooks into intermediate transformer layers using **TransformerLens**.
-- Applies steering vectors: `h_steered = h + c * v_direction`, where `c` is steering coefficient.
-- Does not edit prompts; directly guides model representation space.
+### 4. Multilingual Voice Pipeline (`voice/`)
+- Always-on background listener triggered by local `openWakeWord` ("Hey Sephora").
+- Speech-to-text powered by local OpenAI `whisper` with automatic language identification across 6 primary languages.
 
-### 5. PC Automation Agent (`automation/`)
-- **Intent Classifier**: Categorizes text into chit-chat vs. actionable command.
-- **Whitelist Validator**: Rejects any intent not explicitly listed in `configs/automation_whitelist.yaml`.
-- **Confirmation Manager**: Prompts the user before executing destructive actions.
-- **Handlers**: Modular executors for file operations, application launching, search, and VS Code code generation.
-
-### 6. Voice Pipeline (`voice/`)
-- **openWakeWord**: Runs lightweight ONNX model on background thread to detect "Hey Sephora".
-- **Audio Capture**: Captures 16kHz audio buffer from the microphone.
-- **Whisper Transcriber**: Transcribes speech into text locally with multilingual support.
-- **Language Detection**: Automatically tags spoken language.
+### 5. Reactive Frontend (`frontend/`)
+- Built with **React 18**, **TypeScript**, and **Tailwind CSS**.
+- Houses the **Behavioral Steering Lab** alongside the conversational interface, allowing users to visually manipulate internal vectors and inspect comparative response variations in real time.

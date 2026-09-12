@@ -1,61 +1,54 @@
-# 🗺️ Sephora Project Roadmap
+# 🗺️ Sephora Project Roadmap: Controllable Local AI
 
-This document outlines the milestones, planned features, and development phases for the Sephora team.
-
----
-
-## 🎯 Phase 1: Core Foundation & API Bridge (Current)
-- [x] Project architecture and directory structure
-- [x] Configuration systems (YAML + `.env`)
-- [x] FastAPI REST & WebSocket server structure
-- [x] React + Tailwind CSS + Vite frontend scaffold
-- [ ] Core logging, config loading, and error handling implementation
-- [ ] Local LLM loader (Mistral 7B / Gemma 2B via Hugging Face & 4-bit quantization)
-- [ ] Basic CLI chat loop
+This document details development milestones, research objectives, and implementation phases for the Sephora project.
 
 ---
 
-## 🎙️ Phase 2: Multilingual Voice & Wake Word
-- [ ] Background microphone listener with silence detection
-- [ ] openWakeWord engine integration for "Hey Sephora"
-- [ ] Local OpenAI Whisper integration (medium / large-v3)
-- [ ] Automatic language detection & routing for 6 supported languages
-- [ ] WebSocket streaming of audio and real-time transcription to React UI
+## 🔬 Core Research Track: Activation Steering & Internal Control (Priority)
+- [x] Theoretical formulation & contrastive extraction methodology (`docs/activation_steering.md`)
+- [x] Side-by-side comparison benchmarks & evaluation protocol (`docs/experiments.md`)
+- [ ] TransformerLens forward hook injection engine (`steering/hook_manager.py`)
+- [ ] Automated steering vector extractor from contrastive prompt pairs (`steering/direction_finder.py`)
+- [ ] Pre-calibrated vector registry (`cautious`, `concise`, `detailed`, `creative`, `neutral`)
+- [ ] Side-by-side steered vs. unsteered evaluation API (`/api/steering/compare`)
+- [ ] Interactive React Steering Dashboard with Recharts layer heatmaps & dynamic sliders
 
 ---
 
-## 🖥️ Phase 3: Safe PC Automation Agent
-- [ ] Intent classifier: distinguish natural chat vs. system commands
-- [ ] Whitelist registry for safe operations
+## 🎯 Phase 1: Foundation & High-Performance API Bridge
+- [x] Architectural design prioritizing internal model interventions
+- [x] Centralized configuration system (`configs/*.yaml` and `.env`)
+- [x] FastAPI REST & WebSocket streaming architecture (`/ws/chat`, `/ws/voice`)
+- [x] React 18 + Vite + Tailwind CSS dashboard scaffold
+- [ ] Local quantized model loader (Mistral 7B / Gemma 2B via `bitsandbytes` 4-bit)
+- [ ] High-throughput inference pipeline preserving internal tensor hook access
+
+---
+
+## 🛡️ Phase 2: Safe PC Automation Agent
+- [x] Whitelist registry and parameter validation specification (`docs/automation_whitelist.md`)
+- [ ] Intent classifier separating casual conversation from desktop automation commands
 - [ ] Handlers implementation:
-  - File/folder creation, safe deletion (Recycle Bin via `send2trash`)
-  - Application launcher & search
-  - Code generator & VS Code launcher
-- [ ] User confirmation modal & CLI prompt for destructive actions
-- [ ] Comprehensive sandbox validation and path restrictions
+  - File/directory management with `send2trash` Recycle Bin protection
+  - Application launcher & file search
+  - Code synthesizer targeting VS Code
+- [ ] Human-in-the-loop confirmation modal (UI + CLI) for destructive operations
+- [ ] Operational caution steering integration (evaluating how `cautious` vectors reduce automation errors)
 
 ---
 
-## 🔬 Phase 4: Activation Steering & Mechanistic Interpretability
-- [ ] TransformerLens integration with local model weights
-- [ ] Extraction of behavioral steering vectors (cautious, concise, detailed, creative)
-- [ ] Dynamic forward hook injection at runtime
-- [ ] Interactive React Steering Dashboard:
-  - Real-time layer activation heatmaps (Recharts)
-  - Interactive direction strength sliders (-3.0 to +3.0)
-  - Behavior preset switcher & custom vector persistence
+## 🎙️ Phase 3: Multilingual Voice Interaction
+- [x] Microphone streaming & language configuration specs (`docs/voice_setup.md`, `docs/multilingual_support.md`)
+- [ ] Background openWakeWord listener targeting "Hey Sephora"
+- [ ] Local OpenAI Whisper integration (`medium` / `large-v3`)
+- [ ] Dynamic language routing across 6 primary languages
+- [ ] Low-latency audio ingestion WebSocket
 
 ---
 
-## 🎨 Phase 5: UI/UX & System Integration
-- [ ] Modern dark-theme React interface with responsive layout
-- [ ] Markdown rendering & syntax highlighting in chat bubbles
-- [ ] Windows System Tray daemon (`pystray`) for seamless background execution
-- [ ] End-to-end automated test suite and deployment documentation
-
----
-
-## 💡 Future Horizons
-- Multimodal vision support (local screen analysis for GUI automation)
-- Sparse Autoencoder (SAE) feature steering
-- Cross-platform support (macOS & Linux desktop automation)
+## 🎨 Phase 4: Integrated System Polishing & Evaluation
+- [ ] Complete React dashboard integration uniting Chat, Steering Lab, and Automation Logs
+- [ ] Empirical validation of steering stability across 50 benchmark test prompts
+- [ ] Perplexity stability analysis (monitoring ΔPPL across steering magnitudes)
+- [ ] Windows system tray daemon (`pystray`) for unobtrusive background monitoring
+- [ ] End-to-end automated test suite and reproducibility report

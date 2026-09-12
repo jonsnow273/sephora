@@ -5,14 +5,22 @@ build-backend = "setuptools.backends.legacy:build"
 [project]
 name = "sephora"
 version = "0.1.0"
-description = "AI-Based Local Assistant with Multilingual Voice-Controlled PC Automation and Activation Steering"
+description = "The first local AI assistant with controllable internal behavior via activation steering"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "you@example.com"}
+    {name = "Sephora Research Team", email = "team@sephora-ai.local"}
 ]
-keywords = ["ai", "assistant", "local-llm", "activation-steering", "voice", "automation"]
+keywords = [
+    "activation-steering",
+    "mechanistic-interpretability",
+    "transformer-lens",
+    "local-llm",
+    "ai-assistant",
+    "pc-automation",
+    "representation-engineering"
+]
 
 [project.scripts]
 sephora = "main:main"

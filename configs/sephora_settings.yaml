@@ -1,38 +1,46 @@
-# Sephora - Global Settings
+# Sephora Master Configuration
+# Core Identity: The first local AI assistant with controllable internal behavior
 
 assistant:
   name: "Sephora"
+  tagline: "Controllable Local AI Assistant"
   wake_phrase: "hey sephora"
   default_language: "en"
 
-voice:
+# Activation Steering Subsystem (Core Research Feature)
+steering:
   enabled: true
-  microphone_index: null         # null = system default mic
-  wake_word_sensitivity: 0.5    # 0.0 (very sensitive) to 1.0 (less sensitive)
-  silence_timeout_seconds: 3
+  default_preset: "neutral"       # Options: neutral, cautious, concise, detailed, creative
+  default_strength: 1.5           # Default scalar multiplier α
+  max_safe_strength: 2.8          # Beyond this, warnings for potential perplexity degradation
+  target_layer_default: 16        # Default residual stream layer for general interventions
+  side_by_side_comparison: true   # Enable dual-stream comparison in dashboard
+  telemetry_logging: true         # Record layer activation norms during forward passes
 
-automation:
-  confirmation_required: true   # Always confirm destructive actions
-  safe_delete: true             # Use recycle bin instead of permanent delete
-  sandbox_mode: false           # true = only simulate actions (dry-run)
-
-chatbot:
-  max_history_turns: 20
-  save_history: true
-
+# Local LLM Core
 llm:
   model_name: "mistralai/Mistral-7B-Instruct-v0.3"
-  device: "cuda"
-  quantization: "4bit"          # Options: none, 4bit, 8bit
+  alternate_model: "google/gemma-2-2b-it"
+  device: "cuda"                  # cuda, cpu, or mps
+  quantization: "4bit"            # 4bit, 8bit, or none
   max_new_tokens: 512
   temperature: 0.7
   top_p: 0.9
 
-steering:
-  enabled: true
-  default_preset: "neutral"     # cautious, concise, detailed, creative, neutral
-  dashboard_auto_launch: false
+# PC Automation & Safety Boundaries
+automation:
+  confirmation_required: true     # Destructive actions mandate explicit user confirmation
+  safe_delete: true               # Route deletions to system Recycle Bin (send2trash)
+  sandbox_mode: false             # Set to true for dry-run simulation only
 
+# Voice Pipeline
+voice:
+  enabled: true
+  microphone_index: null           # null = system default microphone
+  wake_word_sensitivity: 0.5      # 0.0 (high sensitivity) to 1.0 (strict)
+  silence_timeout_seconds: 3
+
+# UI & Tray
 tray:
   enabled: true
   minimize_to_tray: true

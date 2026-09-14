@@ -1,0 +1,197 @@
+"""
+Sephora — The first local AI assistant with controllable internal behavior.
+Main application entry point and interactive CLI loop.
+"""
+
+import sys
+import argparse
+from pathlib import Path
+
+# Ensure project root is in sys.path
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from core import config, logger, AVAILABLE_STEERING_PRESETS
+
+BANNER = """
+   _____ ______ _____  _    _  ____  _____            
+  / ____|  ____|  __ \| |  | |/ __ \|  __ \   /\      
+ | (___ | |__  | |__) | |__| | |  | | |__) | /  \     
+  \___ \|  __| |  ___/|  __  | |  | |  _  / / /\ \    
+  ____) | |____| |    | |  | | |__| | | \ \/ ____ \   
+ |_____/|______|_|    |_|  |_|\____/|_|  \_\_/    \_\  
+======================================================
+ The First Local AI Assistant with Controllable Behavior
+======================================================
+"""
+
+def print_system_info():
+    """Print system configuration and active runtime settings."""
+    print(BANNER)
+    print(f"Assistant Name     : {config.assistant_name}")
+    print(f"Primary Model      : {config.model_name}")
+    print(f"Alternate Model    : {config.alternate_model_name}")
+    print(f"Target Device      : {config.device}")
+    print(f"Quantization       : {config.quantization}")
+    print(f"Steering Enabled   : {config.steering_enabled}")
+    print(f"Available Presets  : {', '.join(AVAILABLE_STEERING_PRESETS)}")
+    print(f"Default Preset     : {config.default_steering_preset} (alpha = {config.default_steering_strength})")
+    print(f"PC Automation Safe : {config.safe_delete} (Confirmations: {config.confirmation_required})")
+    print("=" * 54)
+
+def check_dependencies() -> bool:
+    """Check if ML dependencies (torch, transformers) are installed."""
+    try:
+        import torch
+        import transformers
+        return True
+    except ImportError as e:
+        logger.warning(
+            f"Missing required ML runtime: {e}. "
+            "To run local model inference and activation steering, please install dependencies: "
+            "pip install -r requirements.txt"
+        )
+        return False
+
+def run_interactive_cli(preset_name: str = "neutral", alpha: float = 1.5):
+    """Run the interactive terminal chat loop."""
+    print(BANNER)
+    print("Initializing Sephora Cognitive Core...")
+
+    if not check_dependencies():
+        print()
+        print("[Notice] PyTorch or Transformers is not yet installed in this environment.")
+        print("Run 'pip install -r requirements.txt' to enable local inference.")
+        print("Core architecture, configs, and steering registry are validated and ready.")
+        print()
+        return
+
+    from llm import loader, engine
+    from steering import SteeringEngine
+
+    # Load model
+    print(f"Loading local weights ({config.model_name}) on {config.device}...")
+    loader.load()
+
+    # Initialize Steering Engine
+    steering = SteeringEngine(loader.model, loader.tokenizer_wrapper, engine)
+
+    # Apply initial preset if specified
+    if preset_name != "neutral":
+        steering.set_preset(preset_name, alpha)
+
+    print()
+    print("=" * 54)
+    print("Sephora is online! Commands:")
+    print("  /steer <preset> [strength] - Change behavioral direction")
+    print("  /reset                     - Reset to neutral (unsteered)")
+    print("  /compare <prompt>          - Side-by-side steered vs unsteered")
+    print("  /status                    - View active steering telemetry")
+    print("  /quit                      - Exit")
+    print("=" * 54)
+    print()
+
+    messages = []
+
+    while True:
+        try:
+            status = steering.status
+            active_info = f"[{status['active_preset']}:{status['active_alpha']}x]"
+            user_input = input(f"You {active_info}> ").strip()
+
+            if not user_input:
+                continue
+
+            if user_input.lower() in ("/quit", "/exit", "exit", "quit"):
+                print("Shutting down Sephora. Goodbye!")
+                break
+
+            elif user_input.startswith("/steer"):
+                parts = user_input.split()
+                if len(parts) < 2:
+                    print(f"Usage: /steer <preset> [strength]. Presets: {', '.join(AVAILABLE_STEERING_PRESETS)}")
+                    continue
+                p_name = parts[1].lower()
+                p_alpha = float(parts[2]) if len(parts) > 2 else None
+                success = steering.set_preset(p_name, p_alpha)
+                if success:
+                    print(f"-> Steering set to '{p_name}' (alpha = {steering.status['active_alpha']})")
+                else:
+                    print(f"-> Preset '{p_name}' not available. Available: {', '.join(AVAILABLE_STEERING_PRESETS)}")
+                continue
+
+            elif user_input == "/reset":
+                steering.reset()
+                print("-> Steering reset to neutral baseline.")
+                continue
+
+            elif user_input == "/status":
+                st = steering.status
+                print(f"Active Preset : {st['active_preset']}")
+                print(f"Active Alpha  : {st['active_alpha']}")
+                print(f"Hook Active   : {st['hook_active']}")
+                print(f"Target Layer  : {st['active_layer']}")
+                print(f"Cached Vectors: {st['cached_directions']}")
+                continue
+
+            elif user_input.startswith("/compare"):
+                prompt_to_compare = user_input[8:].strip()
+                if not prompt_to_compare:
+                    print("Usage: /compare <your question/prompt>")
+                    continue
+                compare_preset = steering.status["active_preset"]
+                if compare_preset == "neutral":
+                    compare_preset = "concise"
+                print()
+                print(f"Running dual forward pass (Baseline vs '{compare_preset}')...")
+                print()
+                res = steering.compare(
+                    [{"role": "user", "content": prompt_to_compare}],
+                    preset_name=compare_preset,
+                )
+                print(f"--- [1] Baseline (Unsteered) [{res['metrics']['unsteered_tokens']} tokens, {res['metrics']['unsteered_latency_ms']}ms] ---")
+                print(res["unsteered"])
+                print()
+                print(f"--- [2] Steered: {compare_preset} [{res['metrics']['steered_tokens']} tokens ({res['metrics']['token_delta_percentage']}%), {res['metrics']['steered_latency_ms']}ms] ---")
+                print(res["steered"])
+                print("-" * 54)
+                print()
+                continue
+
+            messages.append({"role": "user", "content": user_input})
+            print()
+            print("Sephora: ", end="", flush=True)
+            response = steering.generate_steered(messages)
+            print(response)
+            print()
+            messages.append({"role": "assistant", "content": response})
+
+        except KeyboardInterrupt:
+            print()
+            print("Session interrupted. Exiting...")
+            break
+        except Exception as e:
+            logger.error(f"Error during execution: {e}")
+            print(f"[Error]: {e}")
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Sephora — The First Local AI Assistant with Controllable Internal Behavior."
+    )
+    parser.add_argument("--info", action="store_true", help="Print system configuration and exit")
+    parser.add_argument("--steer", type=str, default="neutral", choices=AVAILABLE_STEERING_PRESETS,
+                        help="Initial steering preset (default: neutral)")
+    parser.add_argument("--strength", type=float, default=1.5, help="Initial steering strength alpha")
+    parser.add_argument("--model", type=str, default=None, help="Override model name")
+
+    args = parser.parse_args()
+
+    if args.info:
+        print_system_info()
+        return
+
+    run_interactive_cli(preset_name=args.steer, alpha=args.strength)
+
+if __name__ == "__main__":
+    main()

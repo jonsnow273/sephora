@@ -15,7 +15,7 @@ Sephora provides 6 primary language slots configured in `configs/languages.yaml`
 | `es` | Spanish | Configurable | `es` |
 | `fr` | French | Configurable | `fr` |
 | `de` | German | Configurable | `de` |
-| `ar` | Arabic | Configurable | `ar` |
+| `mr` | Marathi | Configurable | `mr` |
 
 > Over 90+ additional languages supported by Whisper can be substituted in `configs/languages.yaml`.
 

@@ -22,6 +22,6 @@ active_languages:
     name: "German"
     enabled: false
 
-  - code: "ar"
-    name: "Arabic"
+  - code: "mr"
+    name: "Marathi"
     enabled: false

@@ -85,17 +85,19 @@ class HookManager:
     def _register_hf_hook(self, layer_index: int, direction: torch.Tensor, alpha: float) -> None:
         """Register hook using PyTorch native forward hooks on HuggingFace model layers."""
         try:
-            # Navigate to the transformer layers depending on model architecture
             if hasattr(self.model, "model") and hasattr(self.model.model, "layers"):
-                target_layer = self.model.model.layers[layer_index]
+                layers = self.model.model.layers
             elif hasattr(self.model, "transformer") and hasattr(self.model.transformer, "h"):
-                target_layer = self.model.transformer.h[layer_index]
+                layers = self.model.transformer.h
             else:
                 logger.warning(
                     "Could not locate transformer layers for hook injection. "
                     "Steering will be disabled for this session."
                 )
                 return
+
+            actual_idx = min(layer_index, len(layers) - 1)
+            target_layer = layers[actual_idx]
 
             def hf_hook_fn(module, input, output):
                 """Add steering vector to first tensor in output tuple."""

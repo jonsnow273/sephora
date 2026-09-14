@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from core import config, logger, AVAILABLE_STEERING_PRESETS
 
-BANNER = """
+BANNER = r"""
    _____ ______ _____  _    _  ____  _____            
   / ____|  ____|  __ \| |  | |/ __ \|  __ \   /\      
  | (___ | |__  | |__) | |__| | |  | | |__) | /  \     
@@ -54,7 +54,7 @@ def check_dependencies() -> bool:
         )
         return False
 
-def run_interactive_cli(preset_name: str = "neutral", alpha: float = 1.5):
+def run_interactive_cli(preset_name: str = "neutral", alpha: float = 1.5, model_name: str = None):
     """Run the interactive terminal chat loop."""
     print(BANNER)
     print("Initializing Sephora Cognitive Core...")
@@ -70,9 +70,9 @@ def run_interactive_cli(preset_name: str = "neutral", alpha: float = 1.5):
     from llm import loader, engine
     from steering import SteeringEngine
 
-    # Load model
-    print(f"Loading local weights ({config.model_name}) on {config.device}...")
-    loader.load()
+    target_model = model_name or config.model_name
+    print(f"Loading local weights ({target_model}) on {config.device}...")
+    loader.load(model_name=target_model)
 
     # Initialize Steering Engine
     steering = SteeringEngine(loader.model, loader.tokenizer_wrapper, engine)
@@ -110,15 +110,37 @@ def run_interactive_cli(preset_name: str = "neutral", alpha: float = 1.5):
             elif user_input.startswith("/steer"):
                 parts = user_input.split()
                 if len(parts) < 2:
-                    print(f"Usage: /steer <preset> [strength]. Presets: {', '.join(AVAILABLE_STEERING_PRESETS)}")
+                    print(f"Usage: /steer <preset> [strength] [optional question]. Presets: {', '.join(AVAILABLE_STEERING_PRESETS)}")
                     continue
                 p_name = parts[1].lower()
-                p_alpha = float(parts[2]) if len(parts) > 2 else None
+                p_alpha = None
+                prompt_start_idx = 2
+
+                if len(parts) > 2:
+                    try:
+                        p_alpha = float(parts[2])
+                        prompt_start_idx = 3
+                    except ValueError:
+                        # User typed a question right after preset without numeric strength
+                        prompt_start_idx = 2
+
                 success = steering.set_preset(p_name, p_alpha)
                 if success:
                     print(f"-> Steering set to '{p_name}' (alpha = {steering.status['active_alpha']})")
                 else:
-                    print(f"-> Preset '{p_name}' not available. Available: {', '.join(AVAILABLE_STEERING_PRESETS)}")
+                    print(f"-> Preset '{p_name}' could not be activated. Available: {', '.join(AVAILABLE_STEERING_PRESETS)}")
+                    continue
+
+                # If the user also included a question in the same line, answer it immediately!
+                extra_prompt = " ".join(parts[prompt_start_idx:]).strip()
+                if extra_prompt:
+                    messages.append({"role": "user", "content": extra_prompt})
+                    print(f"\nYou [{p_name}:{steering.status['active_alpha']}x]> {extra_prompt}")
+                    print("\nSephora: ", end="", flush=True)
+                    response = steering.generate_steered(messages)
+                    print(response + "\n")
+                    messages.append({"role": "assistant", "content": response})
+
                 continue
 
             elif user_input == "/reset":
@@ -191,7 +213,7 @@ def main():
         print_system_info()
         return
 
-    run_interactive_cli(preset_name=args.steer, alpha=args.strength)
+    run_interactive_cli(preset_name=args.steer, alpha=args.strength, model_name=args.model)
 
 if __name__ == "__main__":
     main()

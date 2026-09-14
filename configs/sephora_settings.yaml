@@ -19,8 +19,8 @@ steering:
 
 # Local LLM Core
 llm:
-  model_name: "mistralai/Mistral-7B-Instruct-v0.3"
-  alternate_model: "google/gemma-2-2b-it"
+  model_name: "Qwen/Qwen2.5-0.5B-Instruct"
+  alternate_model: "mistralai/Mistral-7B-Instruct-v0.3"
   device: "cuda"                  # cuda, cpu, or mps
   quantization: "4bit"            # 4bit, 8bit, or none
   max_new_tokens: 512

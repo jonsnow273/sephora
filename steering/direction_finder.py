@@ -56,16 +56,14 @@ class DirectionFinder:
 
             # hidden_states is a tuple: (embedding, layer_0, layer_1, ..., layer_N)
             # Index layer_index + 1 to skip embedding layer
-            hidden_states = outputs.hidden_states
-            if layer_index + 1 >= len(hidden_states):
-                logger.warning(
-                    f"Layer index {layer_index} out of range "
-                    f"(model has {len(hidden_states) - 1} layers)."
-                )
-                return None
+            total_layers = len(hidden_states) - 1
+            effective_idx = layer_index + 1
+            if effective_idx >= len(hidden_states):
+                effective_idx = max(1, len(hidden_states) - 3)
+                logger.debug(f"Target layer {layer_index} clamped to model layer {effective_idx - 1} (total: {total_layers})")
 
             # Extract the last token's hidden state: shape (d_model,)
-            layer_hidden = hidden_states[layer_index + 1]  # (batch, seq_len, d_model)
+            layer_hidden = hidden_states[effective_idx]  # (batch, seq_len, d_model)
             last_token_hidden = layer_hidden[0, -1, :]     # (d_model,)
             return last_token_hidden.float().cpu()
 

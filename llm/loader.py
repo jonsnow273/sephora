@@ -69,6 +69,13 @@ class ModelLoader:
                 "trust_remote_code": True,
             }
 
+            # Check if accelerate is available
+            try:
+                import accelerate
+                has_accelerate = True
+            except ImportError:
+                has_accelerate = False
+
             quant = config.quantization
             if self.device != "cpu" and quant in ("4bit", "8bit"):
                 bnb_config = BitsAndBytesConfig(
@@ -79,13 +86,15 @@ class ModelLoader:
                     bnb_4bit_quant_type="nf4",
                 )
                 model_kwargs["quantization_config"] = bnb_config
-                model_kwargs["device_map"] = "auto"
+                if has_accelerate:
+                    model_kwargs["device_map"] = "auto"
             elif self.device == "cpu":
+                # On CPU, standard PyTorch loads directly to RAM without device_map
                 model_kwargs["torch_dtype"] = torch.float32
-                model_kwargs["device_map"] = "cpu"
             else:
                 model_kwargs["torch_dtype"] = torch.float16
-                model_kwargs["device_map"] = "auto"
+                if has_accelerate:
+                    model_kwargs["device_map"] = "auto"
 
             # Load model
             self.model = AutoModelForCausalLM.from_pretrained(target_model, **model_kwargs)

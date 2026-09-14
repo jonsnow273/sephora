@@ -112,11 +112,11 @@ class SteeringEngine:
             return True
 
         if preset_name not in self._direction_cache:
-            logger.warning(
-                f"Direction for '{preset_name}' not calibrated. "
-                "Call calibrate() first or use a cached preset."
-            )
-            return False
+            logger.info(f"Calibrating steering direction for '{preset_name}' on the fly...")
+            self.calibrate([preset_name])
+            if preset_name not in self._direction_cache:
+                logger.error(f"Could not calibrate preset '{preset_name}'.")
+                return False
 
         preset = get_preset(preset_name)
         effective_alpha = alpha if alpha is not None else preset.recommended_strength

@@ -110,11 +110,11 @@ class ConfigManager:
     # LLM settings
     @property
     def model_name(self) -> str:
-        return str(self.get("llm.model_name", "mistralai/Mistral-7B-Instruct-v0.3"))
+        return str(self.get("llm.model_name", "Qwen/Qwen2.5-0.5B-Instruct"))
 
     @property
     def alternate_model_name(self) -> str:
-        return str(self.get("llm.alternate_model", "google/gemma-2-2b-it"))
+        return str(self.get("llm.alternate_model", "mistralai/Mistral-7B-Instruct-v0.3"))
 
     @property
     def device(self) -> str:

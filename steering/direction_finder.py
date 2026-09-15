@@ -54,8 +54,7 @@ class DirectionFinder:
             with torch.no_grad():
                 outputs = self.model(**inputs, output_hidden_states=True)
 
-            # hidden_states is a tuple: (embedding, layer_0, layer_1, ..., layer_N)
-            # Index layer_index + 1 to skip embedding layer
+            hidden_states = outputs.hidden_states
             total_layers = len(hidden_states) - 1
             effective_idx = layer_index + 1
             if effective_idx >= len(hidden_states):
